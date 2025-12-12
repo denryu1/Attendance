@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>お知らせ - 勤怠管理システム</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            font-size: 36px;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .signage-grid {
+            display: grid;
+            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        }
+        .signage-card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        .signage-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+        .signage-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+        }
+        .signage-message {
+            font-size: 16px;
+            line-height: 1.6;
+            color: #666;
+            white-space: pre-wrap;
+        }
+        .signage-time {
+            font-size: 12px;
+            color: #999;
+            margin-top: 15px;
+            text-align: right;
+        }
+        .empty {
+            text-align: center;
+            color: white;
+            padding: 60px 20px;
+            font-size: 20px;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 30px;
+        }
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            font-size: 18px;
+            font-weight: bold;
+            padding: 12px 30px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 25px;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        .back-link a:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .auto-refresh {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📢 お知らせ</h1>
+        <p>最新の連絡事項</p>
+    </div>
+
+    <div class="container">
+        <div class="signage-grid" th:if="${signages.size() > 0}">
+            <div class="signage-card" th:each="signage : ${signages}">
+                <div class="signage-icon">📌</div>
+                <div class="signage-title" th:text="${signage.title}"></div>
+                <div class="signage-message" th:text="${signage.message}"></div>
+                <div class="signage-time" th:text="${#temporals.format(signage.createdAt, 'yyyy/MM/dd HH:mm')}"></div>
+            </div>
+        </div>
+
+        <div th:if="${signages.size() == 0}" class="empty">
+            現在、お知らせはありません
+        </div>
+
+        <div class="back-link">
+            <a href="/attendance/clock">← 打刻画面に戻る</a>
+        </div>
+
+        <div class="auto-refresh">
+            🔄 30秒ごとに自動更新されます
+        </div>
+    </div>
+
+    <script>
+        // 30秒ごとに自動リロード（サイネージ用）
+        setTimeout(() => {
+            location.reload();
+        }, 30000);
+    </script>
+</body>
+</html>

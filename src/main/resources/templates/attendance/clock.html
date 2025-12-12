@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>打刻 - 勤怠管理システム</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .user-name {
+            color: #667eea;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .clock-display {
+            text-align: center;
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        .current-time {
+            font-size: 48px;
+            font-weight: bold;
+            color: #333;
+            font-family: 'Courier New', monospace;
+        }
+        .current-date {
+            font-size: 18px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .status.not-clocked {
+            background: #e9ecef;
+            color: #495057;
+        }
+        .status.working {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.on-break {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status.finished {
+            background: #cce5ff;
+            color: #004085;
+        }
+        .buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 18px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #333;
+        }
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .history-section {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 2px solid #eee;
+        }
+        .history-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .history-item {
+            padding: 12px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .history-type {
+            font-weight: bold;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .type-in { background: #d4edda; color: #155724; }
+        .type-out { background: #f8d7da; color: #721c24; }
+        .type-break-start { background: #fff3cd; color: #856404; }
+        .type-break-end { background: #d1ecf1; color: #0c5460; }
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: bold;
+        }
+        .message.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .message.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .links {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .links a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🕐 勤怠打刻</h1>
+            <p class="user-name" th:text="${user.name}"></p>
+        </div>
+
+        <div class="clock-display">
+            <div class="current-time" id="currentTime">--:--:--</div>
+            <div class="current-date" id="currentDate"></div>
+        </div>
+
+        <div id="message"></div>
+
+        <!-- ステータス表示 -->
+        <div th:if="${currentStatus == 'NOT_CLOCKED'}" class="status not-clocked">
+            未出勤
+        </div>
+        <div th:if="${currentStatus == 'WORKING'}" class="status working">
+            🟢 勤務中
+        </div>
+        <div th:if="${currentStatus == 'ON_BREAK'}" class="status on-break">
+            ☕ 休憩中
+        </div>
+        <div th:if="${currentStatus == 'FINISHED'}" class="status finished">
+            ✅ 退勤済み
+        </div>
+
+        <!-- 打刻ボタン -->
+        <div class="buttons">
+            <button class="btn btn-primary" onclick="clockIn()">
+                🏢 出勤
+            </button>
+            <button class="btn btn-danger" onclick="clockOut()">
+                🏠 退勤
+            </button>
+            <button class="btn btn-warning" onclick="breakStart()">
+                ☕ 休憩開始
+            </button>
+            <button class="btn btn-success" onclick="breakEnd()">
+                ↩️ 休憩終了
+            </button>
+        </div>
+
+        <!-- 今日の打刻履歴 -->
+        <div class="history-section" th:if="${todayAttendances.size() > 0}">
+            <h3>📋 本日の打刻履歴</h3>
+            <div class="history-list">
+                <div class="history-item" th:each="att : ${todayAttendances}">
+                    <div>
+                        <span th:if="${att.clockType == 'CLOCK_IN'}" class="history-type type-in">出勤</span>
+                        <span th:if="${att.clockType == 'CLOCK_OUT'}" class="history-type type-out">退勤</span>
+                        <span th:if="${att.clockType == 'BREAK_START'}" class="history-type type-break-start">休憩開始</span>
+                        <span th:if="${att.clockType == 'BREAK_END'}" class="history-type type-break-end">休憩終了</span>
+                    </div>
+                    <div th:text="${#temporals.format(att.clockTime, 'HH:mm:ss')}"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="links">
+            <a href="/attendance/history">📊 勤怠履歴</a>
+            <a href="/signages/display">📢 お知らせ</a>
+            <a href="/logout">ログアウト</a>
+        </div>
+    </div>
+
+    <script>
+        function updateClock() {
+            const now = new Date();
+            const timeStr = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const dateStr = now.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
+            
+            document.getElementById('currentTime').textContent = timeStr;
+            document.getElementById('currentDate').textContent = dateStr;
+        }
+
+        function showMessage(text, type) {
+            const messageDiv = document.getElementById('message');
+            messageDiv.className = 'message ' + type;
+            messageDiv.textContent = text;
+            setTimeout(() => {
+                messageDiv.textContent = '';
+                messageDiv.className = '';
+            }, 3000);
+        }
+
+        function clockIn() {
+            if (!confirm('出勤しますか?')) return;
+            
+            fetch('/attendance/clock-in', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showMessage(data.message, 'error');
+                    }
+                });
+        }
+
+        function clockOut() {
+            if (!confirm('退勤しますか?')) return;
+            
+            fetch('/attendance/clock-out', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showMessage(data.message, 'error');
+                    }
+                });
+        }
+
+        function breakStart() {
+            if (!confirm('休憩を開始しますか?')) return;
+            
+            fetch('/attendance/break-start', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showMessage(data.message, 'error');
+                    }
+                });
+        }
+
+        function breakEnd() {
+            if (!confirm('休憩を終了しますか?')) return;
+            
+            fetch('/attendance/break-end', { method: 'POST' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        showMessage(data.message, 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showMessage(data.message, 'error');
+                    }
+                });
+        }
+
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+</body>
+</html>

@@ -1,0 +1,43 @@
+<!-- templates/signages/list.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>サイネージ一覧</title>
+</head>
+<body>
+
+<h1>サイネージ一覧</h1>
+
+<a th:href="@{/signages/create}">＋ 新規作成</a>
+
+<table border="1" cellpadding="5">
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>タイトル</th>
+            <th>本文</th>
+            <th>送信対象</th>
+            <th>部署ID</th>
+            <th>ユーザーID</th>
+            <th>作成日</th>
+            <th>更新日</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- SignageService から取得した list を表示 -->
+        <tr th:each="s : ${signages}">
+            <td th:text="${s.id}"></td>
+            <td th:text="${s.title}"></td>
+            <td th:text="${s.message}"></td>
+            <td th:text="${s.targetType}"></td>
+            <td th:text="${s.targetDepartmentId}"></td>
+            <td th:text="${s.targetUserId}"></td>
+            <td th:text="${#temporals.format(s.createdAt, 'yyyy-MM-dd HH:mm')}"></td>
+            <td th:text="${#temporals.format(s.updatedAt, 'yyyy-MM-dd HH:mm')}"></td>
+        </tr>
+    </tbody>
+</table>
+
+</body>
+</html>

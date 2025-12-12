@@ -1,0 +1,50 @@
+<!-- templates/signages/create.html -->
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>サイネージ新規作成</title>
+</head>
+<body>
+
+<h1>サイネージ新規作成</h1>
+
+<form th:action="@{/signages}" th:method="post" th:object="${signage}">
+    <div>
+        <label>タイトル：</label>
+        <input type="text" th:field="*{title}" required>
+    </div>
+
+    <div>
+        <label>本文：</label><br>
+        <textarea th:field="*{message}" rows="5" cols="40" required></textarea>
+    </div>
+
+    <div>
+        <label>送信対象タイプ：</label>
+        <select th:field="*{targetType}">
+            <option value="ALL">全体</option>
+            <option value="DEPARTMENT">部署</option>
+            <option value="USER">個人ユーザー</option>
+        </select>
+    </div>
+
+    <div>
+        <label>部署ID（部署宛のとき）：</label>
+        <input type="number" th:field="*{targetDepartmentId}">
+    </div>
+
+    <div>
+        <label>ユーザーID（個人宛のとき）：</label>
+        <input type="number" th:field="*{targetUserId}">
+    </div>
+
+    <div>
+        <button type="submit">作成する</button>
+    </div>
+</form>
+
+<a th:href="@{/signages}">← 一覧へ戻る</a>
+
+</body>
+</html>
