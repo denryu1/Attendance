@@ -190,12 +190,34 @@ public class ClockController {
 			return "redirect:/login";
 		}
 
-		User user = userRepository.findById(userId).orElse(null);
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new RuntimeException("User not found"));
+
 		List<Attendance> attendances = attendanceRepository.findByUserOrderByClockTimeDesc(user);
+
+		// ===== 追加：集計処理 =====
+		int totalMinutes = attendances.stream()
+				.mapToInt(att -> {
+					// CLOCK_IN / CLOCK_OUT ベースで計算できないため一旦 0
+					// ※今後 start/end 構造にするならここを拡張
+					return 0;
+				})
+				.sum();
+
+		double totalHours = totalMinutes / 60.0;
+
+		long workDays = attendances.stream()
+				.map(Attendance::getDate)
+				.distinct()
+				.count();
+		// ========================
 
 		model.addAttribute("user", user);
 		model.addAttribute("attendances", attendances);
+		model.addAttribute("totalHours", totalHours);
+		model.addAttribute("workDays", workDays);
 
 		return "attendance/history";
 	}
+
 }

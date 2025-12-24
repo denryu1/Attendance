@@ -31,103 +31,334 @@
             margin: 20px auto;
             padding: 0 20px;
         }
+        .filter-section {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .filter-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+        }
+        .filter-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .filter-controls select {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            min-width: 250px;
+            background: white;
+            cursor: pointer;
+            transition: border-color 0.3s;
+        }
+        .filter-controls select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn-filter {
+            padding: 10px 25px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-filter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-reset {
+            padding: 10px 25px;
+            background: #e9ecef;
+            color: #495057;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-reset:hover {
+            background: #dee2e6;
+        }
+        .selected-filter {
+            background: #e7f3ff;
+            padding: 10px 15px;
+            border-radius: 8px;
+            color: #0066cc;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .selected-filter .remove {
+            color: #dc3545;
+            cursor: pointer;
+            font-size: 18px;
+        }
         .section {
             background: white;
             padding: 25px;
             border-radius: 12px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .table-container {
-            overflow-x: auto;
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
         }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 800px;
-        }
-        th, td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #eee;
-        }
-        th {
-            background: #f8f9fa;
-            font-weight: bold;
+        .section h2 {
             color: #333;
-            position: sticky;
-            top: 0;
         }
-        tr:hover {
+        .record-count {
+            color: #666;
+            font-size: 14px;
+        }
+        .export-section {
             background: #f8f9fa;
-        }
-        .badge {
-            padding: 4px 8px;
+            padding: 20px;
             border-radius: 12px;
-            font-size: 11px;
+            margin-bottom: 20px;
+            border: 2px dashed #dee2e6;
+        }
+        .export-section h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 18px;
+        }
+        .export-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .export-controls select {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 15px;
+            min-width: 200px;
+            background: white;
+        }
+        .btn-export {
+            padding: 12px 30px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
             font-weight: bold;
-            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
         }
-        .badge-in { background: #d4edda; color: #155724; }
-        .badge-out { background: #f8d7da; color: #721c24; }
-        .badge-break-start { background: #fff3cd; color: #856404; }
-        .badge-break-end { background: #d1ecf1; color: #0c5460; }
-        .empty {
-            text-align: center;
-            padding: 60px;
-            color: #999;
+        .btn-export:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
         }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <h1>📋 全勤怠一覧</h1>
-    </div>
+		14:40table-container {
+		overflow-x: auto;
+		}
+		table {
+		width: 100%;
+		border-collapse: collapse;
+		min-width: 800px;
+		}
+		th, td {
+		padding: 12px;
+		text-align: left;
+		border-bottom: 1px solid #eee;
+		}
+		th {
+		background: #f8f9fa;
+		font-weight: bold;
+		color: #333;
+		position: sticky;
+		top: 0;
+		}
+		tr:hover {
+		background: #f8f9fa;
+		}
+		.badge {
+		padding: 4px 8px;
+		border-radius: 12px;
+		font-size: 11px;
+		font-weight: bold;
+		white-space: nowrap;
+		}
+		.badge-in { background: #d4edda; color: #155724; }
+		.badge-out { background: #f8d7da; color: #721c24; }
+		.badge-break-start { background: #fff3cd; color: #856404; }
+		.badge-break-end { background: #d1ecf1; color: #0c5460; }
+		.empty {
+		text-align: center;
+		padding: 60px;
+		color: #999;
+		}
+		</style>
+		</head>
+		<body>
+		    <div class="header">
+		        <h1>📋 全勤怠一覧</h1>
+		    </div>
+			<div class="nav">
+			    <a href="/admin/dashboard">ダッシュボード</a>
+			    <a href="/admin/attendance-list">勤怠一覧</a>
+			    <a href="/admin/labor-violations">違反チェック</a>
+			    <a href="/signages/list">サイネージ</a>
+			    <a href="/logout">ログアウト</a>
+			</div>
 
-    <div class="nav">
-        <a href="/admin/dashboard">ダッシュボード</a>
-        <a href="/admin/attendance-list">勤怠一覧</a>
-        <a href="/signages/list">サイネージ</a>
-        <a href="/logout">ログアウト</a>
-    </div>
+			<div class="container">
+			    <!-- 絞り込みセクション -->
+			    <div class="filter-section">
+			        <h3>🔍 スタッフで絞り込む</h3>
+			        
+			        <!-- 選択中のフィルター表示 -->
+			        <div th:if="${selectedUser}" class="selected-filter" style="margin-bottom: 15px;">
+			            <span>📌 絞り込み中: <strong th:text="${selectedUser.name}"></strong></span>
+			            <a href="/admin/attendance-list" class="remove" title="絞り込みを解除">✕</a>
+			        </div>
+			        
+			        <form action="/admin/attendance-list" method="get">
+			            <div class="filter-controls">
+			                <select name="userId" id="userSelect" required>
+			                    <option value="">-- スタッフを選択 --</option>
+			                    <option th:each="user : ${allUsers}" 
+			                            th:value="${user.id}" 
+			                            th:text="${user.name + ' (' + user.email + ')'}"
+			                            th:selected="${selectedUserId != null && selectedUserId == user.id}">
+			                    </option>
+			                </select>
+			                
+			                <button type="submit" class="btn-filter">🔍 絞り込む</button>
+			                <a href="/admin/attendance-list" class="btn-reset">🔄 リセット</a>
+			            </div>
+			        </form>
+			    </div>
 
-    <div class="container">
-        <div class="section">
-            <h2 style="margin-bottom: 20px;">全打刻記録</h2>
-            
-            <div class="table-container" th:if="${attendances.size() > 0}">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>日付</th>
-                            <th>社員名</th>
-                            <th>部署</th>
-                            <th>打刻時刻</th>
-                            <th>打刻種別</th>
-                            <th>場所</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr th:each="att : ${attendances}">
-                            <td th:text="${#temporals.format(att.date, 'yyyy/MM/dd (E)')}"></td>
-                            <td th:text="${att.user.name}"></td>
-                            <td th:text="${att.user.department?.name ?: '-'}"></td>
-                            <td th:text="${#temporals.format(att.clockTime, 'HH:mm:ss')}"></td>
-                            <td>
-                                <span th:if="${att.clockType == 'CLOCK_IN'}" class="badge badge-in">出勤</span>
-                                <span th:if="${att.clockType == 'CLOCK_OUT'}" class="badge badge-out">退勤</span>
-                                <span th:if="${att.clockType == 'BREAK_START'}" class="badge badge-break-start">休憩開始</span>
-                                <span th:if="${att.clockType == 'BREAK_END'}" class="badge badge-break-end">休憩終了</span>
-                            </td>
-                            <td th:text="${att.location ?: '-'}"></td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+			    <!-- CSVエクスポートセクション -->
+				<!-- CSVエクスポートセクション -->
+				<div class="export-section">
+				    <h3>📥 CSVエクスポート</h3>
+				    <div class="export-controls">
+				        <select id="exportUserId">
+				            <option value="">全スタッフ</option>
+				            <option th:each="user : ${allUsers}" 
+				                    th:value="${user.id}" 
+				                    th:text="${user.name}"
+				                    th:selected="${selectedUserId != null && selectedUserId == user.id}">
+				            </option>
+				        </select>
+				        
+				        <select id="exportPeriod">
+				            <option value="today">今日のデータ</option>
+				            <option value="week">過去1週間</option>
+				            <option value="month" selected>過去1ヶ月</option>
+				            <option value="all">全期間</option>
+				        </select>
+				        
+				        <button onclick="exportCSV()" class="btn-export">
+				            📊 CSVダウンロード
+				        </button>
+				        
+				        <span style="color: #666; font-size: 14px;">
+				            ※ スタッフと期間を選択してください
+				        </span>
+				    </div>
+				</div>
 
-            <div th:if="${attendances.size() == 0}" class="empty">
-                勤怠記録がありません
-            </div>
-        </div>
-    </div>
-</body>
-</html>
+			    <!-- 打刻記録テーブル -->
+			    <div class="section">
+			        <div class="section-header">
+			            <h2>全打刻記録</h2>
+			            <span class="record-count">
+			                📊 <strong th:text="${attendances.size()}">0</strong> 件の記録
+			            </span>
+			        </div>
+			        
+			        <div class="table-container" th:if="${attendances.size() > 0}">
+			            <table>
+			                <thead>
+			                    <tr>
+			                        <th>日付</th>
+			                        <th>社員名</th>
+			                        <th>部署</th>
+			                        <th>打刻時刻</th>
+			                        <th>打刻種別</th>
+			                        <th>場所</th>
+			                    </tr>
+			                </thead>
+			                <tbody>
+			                    <tr th:each="att : ${attendances}">
+			                        <td th:text="${#temporals.format(att.date, 'yyyy/MM/dd (E)')}"></td>
+			                        <td th:text="${att.user.name}"></td>
+			                        <td th:text="${att.user.department?.name ?: '-'}"></td>
+			                        <td th:text="${#temporals.format(att.clockTime, 'HH:mm:ss')}"></td>
+			                        <td>
+			                            <span th:if="${att.clockType == 'CLOCK_IN'}" class="badge badge-in">出勤</span>
+			                            <span th:if="${att.clockType == 'CLOCK_OUT'}" class="badge badge-out">退勤</span>
+			                            <span th:if="${att.clockType == 'BREAK_START'}" class="badge badge-break-start">休憩開始</span>
+			                            <span th:if="${att.clockType == 'BREAK_END'}" class="badge badge-break-end">休憩終了</span>
+			                        </td>
+			                        <td th:text="${att.location ?: '-'}"></td>
+			                    </tr>
+			                </tbody>
+			            </table>
+			        </div>
+
+			        <div th:if="${attendances.size() == 0}" class="empty">
+			            勤怠記録がありません
+			        </div>
+			    </div>
+			</div>
+
+			
+			<script th:inline="javascript">
+			    function exportCSV() {
+			        const period = document.getElementById('exportPeriod').value;
+			        const userId = document.getElementById('exportUserId').value;
+			        
+			        let url = '/admin/attendance-list/export-csv?period=' + period;
+			        if (userId) {
+			            url += '&userId=' + userId;
+			        }
+			        
+			        // ダウンロード開始のフィードバック
+			        const btn = event.target;
+			        const originalText = btn.innerHTML;
+			        btn.innerHTML = '⏳ ダウンロード中...';
+			        btn.disabled = true;
+			        
+			        // ダウンロード後にボタンを元に戻す
+			        setTimeout(() => {
+			            btn.innerHTML = originalText;
+			            btn.disabled = false;
+			        }, 2000);
+			        
+			        window.location.href = url;
+			    }
+			</script>
+			</script>
+			</body>
+			</html>
+
+  

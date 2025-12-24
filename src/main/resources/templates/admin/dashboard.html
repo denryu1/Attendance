@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理者ダッシュボード</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 { font-size: 28px; }
+        .nav {
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+        }
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        
+        /* 違反バナー */
+        .violation-banner {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 20px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+            margin-bottom: 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.5s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        .violation-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .violation-banner-icon {
+            font-size: 48px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        .violation-banner-text h3 {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+        .violation-banner-text p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .violation-banner-action {
+            display: flex;
+            gap: 10px;
+        }
+        .btn-check-violations {
+            background: white;
+            color: #dc3545;
+            padding: 12px 24px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s;
+            display: inline-block;
+        }
+        .btn-check-violations:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        .stat-card .number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #333;
+        }
+        .section {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .section h2 { margin-bottom: 20px; color: #333; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+        th {
+            background: #f8f9fa;
+            font-weight: bold;
+            color: #333;
+        }
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .status-not-clocked { background: #e9ecef; color: #495057; }
+        .status-working { background: #d4edda; color: #155724; }
+        .status-on-break { background: #fff3cd; color: #856404; }
+        .status-finished { background: #d1ecf1; color: #0c5460; }
+        .time-display {
+            font-family: 'Courier New', monospace;
+            color: #666;
+        }
+        tr:hover { background: #f8f9fa; }
+        .empty-message {
+            text-align: center;
+            color: #999;
+            padding: 40px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>📊 管理者ダッシュボード</h1>
+    <p>リアルタイム勤怠管理</p>
+</div>
+
+<div class="nav">
+    <a href="/admin/dashboard">ダッシュボード</a>
+    <a href="/admin/attendance-list">全勤怠一覧</a>
+    <a href="/admin/labor-violations">違反チェック</a>
+    <a href="/signages/list">サイネージ管理</a>
+    <a href="/logout">ログアウト</a>
+</div>
+
+<div class="container">
+
+    <!-- 違反バナー -->
+    <div class="violation-banner" th:if="${unresolvedViolations > 0}">
+        <div class="violation-banner-content">
+            <div class="violation-banner-icon">⚠️</div>
+            <div class="violation-banner-text">
+                <h3>未解決の労働基準法違反があります</h3>
+                <p><strong th:text="${unresolvedViolations}">3</strong> 件の違反が検出されています。早急な対応が必要です。</p>
+            </div>
+        </div>
+        <div class="violation-banner-action">
+            <a href="/admin/labor-violations" class="btn-check-violations">
+                違反を確認 →
+            </a>
+        </div>
+    </div>
+
+    <!-- 統計 -->
+    <div class="stats">
+        <div class="stat-card">
+            <h3>本日の出勤者</h3>
+            <div class="number" th:text="${userStatusMap.size()}">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>現在勤務中</h3>
+            <div class="number" th:text="${workingCount}">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>休憩中</h3>
+            <div class="number" th:text="${breakCount}">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>退勤済み</h3>
+            <div class="number" th:text="${finishedCount}">0</div>
+        </div>
+    </div>
+
+    <!-- 勤務状況 -->
+    <div class="section">
+        <h2>🕐 本日の勤務状況（<span th:text="${today}"></span>）</h2>
+
+        <table th:if="${userStatusMap.size() > 0}">
+            <thead>
+            <tr>
+                <th>社員名</th>
+                <th>部署</th>
+                <th>現在のステータス</th>
+                <th>出勤時刻</th>
+                <th>退勤時刻</th>
+                <th>勤務時間</th>
+            </tr>
+            </thead>
+
+            <tbody>
+            <tr th:each="entry : ${userStatusMap}"
+                th:with="time=${userTimeMap != null ? userTimeMap[entry.key] : null}">
+
+                <td th:text="${entry.key.name}">田中太郎</td>
+                <td th:text="${entry.key.department?.name ?: '未所属'}">開発部</td>
+
+                <td>
+                    <span th:if="${entry.value == 'NOT_CLOCKED'}"
+                          class="status-badge status-not-clocked">⚪ 未出勤</span>
+                    <span th:if="${entry.value == 'WORKING'}"
+                          class="status-badge status-working">🟢 勤務中</span>
+                    <span th:if="${entry.value == 'ON_BREAK'}"
+                          class="status-badge status-on-break">☕ 休憩中</span>
+                    <span th:if="${entry.value == 'FINISHED'}"
+                          class="status-badge status-finished">✅ 退勤済み</span>
+                </td>
+
+                <!-- 出勤時刻 -->
+                <td>
+                    <span class="time-display"
+                          th:if="${time != null and time.clockType == 'CLOCK_IN'}"
+                          th:text="${#temporals.format(time.clockTime,'HH:mm')}">09:00</span>
+                    <span th:unless="${time != null and time.clockType == 'CLOCK_IN'}">-</span>
+                </td>
+
+                <!-- 退勤時刻 -->
+                <td>
+                    <span class="time-display"
+                          th:if="${time != null and time.clockType == 'CLOCK_OUT'}"
+                          th:text="${#temporals.format(time.clockTime,'HH:mm')}">18:00</span>
+                    <span th:unless="${time != null and time.clockType == 'CLOCK_OUT'}">-</span>
+                </td>
+
+                <!-- 勤務時間（Attendance設計上、今回は表示不可） -->
+                <td>-</td>
+
+            </tr>
+            </tbody>
+        </table>
+
+        <p th:if="${userStatusMap.size() == 0}" class="empty-message">
+            本日の勤怠記録はありません
+        </p>
+    </div>
+</div>
+
+</body>
+</html>

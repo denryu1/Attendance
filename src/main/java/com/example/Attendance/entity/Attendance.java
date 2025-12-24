@@ -52,6 +52,10 @@ public class Attendance {
 	@Column(columnDefinition = "TEXT")
 	private String notes; // 備考
 
+	@Column(name = "violation_resolved", nullable = false)
+	@Builder.Default
+	private Boolean violationResolved = false; // 違反解決済みフラグ
+
 	@PrePersist
 	protected void onCreate() {
 		if (clockTime == null) {
@@ -59,6 +63,9 @@ public class Attendance {
 		}
 		if (date == null) {
 			date = clockTime.toLocalDate();
+		}
+		if (violationResolved == null) {
+			violationResolved = false;
 		}
 	}
 }

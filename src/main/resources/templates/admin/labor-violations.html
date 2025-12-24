@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>労働基準法違反チェック</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f5f5f5;
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        .nav {
+            background: white;
+            padding: 15px 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .nav a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .nav a.active {
+            color: #dc3545;
+        }
+        .period-selector {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+        }
+        .period-btn {
+            padding: 8px 16px;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 6px;
+            color: #495057;
+            text-decoration: none;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        .period-btn:hover {
+            background: #e9ecef;
+        }
+        .period-btn.active {
+            background: #dc3545;
+            color: white;
+            border-color: #dc3545;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 0 20px;
+        }
+        .summary {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+        .summary-item {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .summary-item.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+            color: white;
+        }
+        .summary-item.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+            color: #333;
+        }
+        .summary-item.info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+        }
+        .summary-item h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+            opacity: 0.9;
+        }
+        .summary-item .number {
+            font-size: 48px;
+            font-weight: bold;
+        }
+        .violation-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            border-left: 5px solid #dc3545;
+        }
+        .violation-card.resolved {
+            border-left-color: #28a745;
+            opacity: 0.7;
+        }
+        .violation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f8f9fa;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .user-details h3 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .user-details p {
+            font-size: 14px;
+            color: #666;
+        }
+        .severity-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .severity-high {
+            background: #dc3545;
+            color: white;
+        }
+        .severity-medium {
+            background: #ffc107;
+            color: #333;
+        }
+        .severity-resolved {
+            background: #28a745;
+            color: white;
+        }
+        .daily-violations {
+            margin-top: 20px;
+        }
+        .daily-violation-item {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border-left: 3px solid #dc3545;
+            position: relative;
+        }
+        .daily-violation-item.resolved {
+            background: #d4edda;
+            border-left-color: #28a745;
+        }
+        .violation-date {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .violation-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .violation-detail {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        .violation-icon {
+            font-size: 18px;
+        }
+        .violation-type {
+            background: #dc3545;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+            margin-right: 5px;
+            margin-top: 10px;
+        }
+        .violation-type.break {
+            background: #ffc107;
+            color: #333;
+        }
+        .violation-type.no-checkout {
+            background: #dc3545;
+            color: white;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .weekly-violation {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .weekly-violation strong {
+            color: #856404;
+        }
+        .btn-resolve {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-resolve:hover {
+            background: #218838;
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(40, 167, 69, 0.3);
+        }
+        .resolved-badge {
+            background: #28a745;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-block;
+        }
+        .empty-state {
+            background: white;
+            padding: 60px 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+        .empty-state h3 {
+            font-size: 24px;
+            color: #28a745;
+            margin-bottom: 10px;
+        }
+        .empty-state p {
+            color: #666;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⚠️ 労働基準法違反チェック</h1>
+        <p>労働時間・休憩時間の法令違反を監視</p>
+    </div>
+
+    <div class="nav">
+        <a href="/admin/dashboard">ダッシュボード</a>
+        <a href="/admin/attendance-list">勤怠一覧</a>
+        <a href="/admin/labor-violations" class="active">違反チェック</a>
+        <a href="/signages/list">サイネージ管理</a>
+        <a href="/logout">ログアウト</a>
+        
+        <div class="period-selector">
+            <a href="/admin/labor-violations?period=today" 
+               class="period-btn" 
+               th:classappend="${period == 'today' ? 'active' : ''}">
+                今日
+            </a>
+            <a href="/admin/labor-violations?period=week" 
+               class="period-btn" 
+               th:classappend="${period == 'week' ? 'active' : ''}">
+                今週
+            </a>
+            <a href="/admin/labor-violations?period=month" 
+               class="period-btn" 
+               th:classappend="${period == 'month' ? 'active' : ''}">
+                今月
+            </a>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- サマリー -->
+        <div class="summary">
+            <div class="summary-item danger">
+                <h3>🚨 違反者数</h3>
+                <div class="number" th:text="${totalViolations}">0</div>
+            </div>
+            <div class="summary-item warning">
+                <h3>📅 対象期間</h3>
+                <div class="number" style="font-size: 18px; margin-top: 10px;">
+                    <span th:text="${#temporals.format(startDate, 'MM/dd')}"></span>
+                    〜
+                    <span th:text="${#temporals.format(endDate, 'MM/dd')}"></span>
+                </div>
+            </div>
+            <div class="summary-item info">
+                <h3>📊 チェック基準</h3>
+                <div style="font-size: 14px; margin-top: 10px; text-align: left;">
+                    • 1日8時間超過<br>
+                    • 週40時間超過<br>
+                    • 休憩時間不足<br>
+                    • 退勤未記録(12h+)
+                </div>
+            </div>
+        </div>
+
+        <!-- 違反がない場合 -->
+        <div th:if="${totalViolations == 0}" class="empty-state">
+            <div class="empty-state-icon">✅</div>
+            <h3>違反は検出されませんでした</h3>
+            <p>すべての従業員が労働基準法を遵守しています</p>
+        </div>
+
+        <!-- 違反一覧 -->
+        <div th:if="${totalViolations > 0}">
+            <div class="violation-card" th:each="report : ${violationReports}"
+                 th:classappend="${!report.hasUnresolvedViolations() ? 'resolved' : ''}">
+                <div class="violation-header">
+                    <div class="user-info">
+                        <div class="user-avatar" th:text="${#strings.substring(report.user.name, 0, 1)}">田</div>
+                        <div class="user-details">
+                            <h3 th:text="${report.user.name}">田中太郎</h3>
+                            <p th:text="${report.user.department != null ? report.user.department.name : '未所属'}">開発部</p>
+                        </div>
+                    </div>
+                    <div class="severity-badge" 
+                         th:classappend="${!report.hasUnresolvedViolations() ? 'severity-resolved' : (report.weeklyOvertime ? 'severity-high' : 'severity-medium')}">
+                        <span th:if="${!report.hasUnresolvedViolations()}">✅ 解決済み</span>
+                        <span th:if="${report.hasUnresolvedViolations() && report.weeklyOvertime}">🚨 重大違反</span>
+                        <span th:if="${report.hasUnresolvedViolations() && !report.weeklyOvertime}">⚠️ 要注意</span>
+                    </div>
+                </div>
+
+                <!-- 週次違反 -->
+                <div th:if="${report.weeklyOvertime}" class="weekly-violation">
+                    <strong>📅 週の労働時間超過:</strong>
+                    <span th:text="${#numbers.formatDecimal(report.weeklyHours, 1, 1)}">45.5</span>時間
+                    (法定上限: 40時間)
+                    <span style="color: #dc3545; font-weight: bold;">
+                        +<span th:text="${#numbers.formatDecimal(report.weeklyHours - 40, 1, 1)}">5.5</span>時間超過
+                    </span>
+                </div>
+
+                <!-- 日次違反 -->
+                <div class="daily-violations">
+                    <div class="daily-violation-item" th:each="daily : ${report.dailyViolations}"
+                         th:classappend="${daily.resolved ? 'resolved' : ''}">
+                        <div class="violation-date">
+                            <span>
+                                📆 <span th:text="${#temporals.format(daily.date, 'yyyy年MM月dd日 (E)')}"></span>
+                            </span>
+                            <div>
+                                <span th:if="${daily.resolved}" class="resolved-badge">✅ 解決済み</span>
+                                <form th:if="${!daily.resolved}" 
+                                      th:action="@{/admin/labor-violations/resolve/{userId}/{date}(userId=${report.user.id}, date=${daily.date})}" 
+                                      method="post" 
+                                      style="display: inline;"
+                                      onsubmit="return confirm('この違反を解決済みにしますか？');">
+                                    <input type="hidden" name="period" th:value="${period}">
+                                    <button type="submit" class="btn-resolve">✓ 解決済みにする</button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <div class="violation-details">
+                            <div class="violation-detail">
+                                <span class="violation-icon">🕐</span>
+                                <span>
+                                    出勤: <strong th:text="${daily.clockIn != null ? #temporals.format(daily.clockIn, 'HH:mm') : '-'}">09:00</strong>
+                                </span>
+                            </div>
+                            <div class="violation-detail">
+                                <span class="violation-icon">🕔</span>
+                                <span>
+                                    退勤: <strong th:if="${daily.clockOut != null}" th:text="${#temporals.format(daily.clockOut, 'HH:mm')}">20:00</strong>
+                                    <strong th:if="${daily.clockOut == null}" style="color: #dc3545;">未記録</strong>
+                                </span>
+                            </div>
+                            <div class="violation-detail">
+                                <span class="violation-icon">⏱️</span>
+                                <span>
+                                    労働: <strong th:if="${daily.workMinutes > 0}" th:text="${#numbers.formatDecimal(daily.workMinutes / 60.0, 1, 1)} + '時間'">9.5時間</strong>
+                                    <strong th:if="${daily.workMinutes == 0 && daily.noClockOut}" style="color: #dc3545;">退勤未記録</strong>
+                                    <strong th:if="${daily.workMinutes == 0 && !daily.noClockOut}">-</strong>
+                                </span>
+                            </div>
+                            <div class="violation-detail">
+                                <span class="violation-icon">☕</span>
+                                <span>
+                                    休憩: <strong th:text="${daily.breakMinutes} + '分'">30分</strong>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <span th:if="${daily.noClockOut}" class="violation-type no-checkout">
+                                🚨 退勤未記録: 出勤から<span th:text="${daily.hoursSinceClockIn}">12</span>時間以上経過
+                            </span>
+                            <span th:if="${daily.overtimeViolation}" class="violation-type">
+                                ⏰ 労働時間超過: +<span th:text="${daily.overtimeMinutes}">90</span>分
+                            </span>
+                            <span th:if="${daily.breakViolation}" class="violation-type break">
+                                ☕ 休憩不足: <span th:text="${daily.requiredBreakMinutes - daily.breakMinutes}">15</span>分不足
+                                (必要: <span th:text="${daily.requiredBreakMinutes}">45</span>分)
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

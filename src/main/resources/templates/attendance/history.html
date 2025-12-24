@@ -125,6 +125,7 @@
     </style>
 </head>
 <body>
+
     <div class="header">
         <h1>📊 勤怠履歴</h1>
         <p th:text="${user.name} + 'さん'"></p>
@@ -138,49 +139,58 @@
     </div>
 
     <div class="container">
+
         <!-- 集計サマリー -->
         <div class="summary" th:if="${attendances.size() > 0}">
             <div class="summary-item">
                 <h3>📅 勤務日数</h3>
-                <div class="value" th:text="${attendances.size()}">0</div>
+                <div class="value" th:text="${workDays}">0</div>
             </div>
             <div class="summary-item">
                 <h3>⏰ 総勤務時間</h3>
-                <div class="value" th:text="${#numbers.formatDecimal(attendances.stream().mapToInt(a -> a.calculateWorkMinutes()).sum() / 60.0, 1, 1)} + 'h'">0h</div>
+                <div class="value"
+                     th:text="${#numbers.formatDecimal(totalHours, 1, 1)} + 'h'">
+                    0h
+                </div>
             </div>
             <div class="summary-item">
                 <h3>⚠️ 超過勤務</h3>
-                <div class="value" th:text="${attendances.stream().filter(a -> a.overDailyLimit).count()}">0</div>
+                <div class="value">0</div>
             </div>
         </div>
 
         <!-- 履歴リスト -->
         <div class="history-list">
+
             <div th:if="${attendances.size() == 0}" class="empty">
                 勤怠記録がありません
             </div>
 
-            <div class="history-item" th:each="att : ${#lists.sort(attendances, (a,b) -> b.date.compareTo(a.date))}">
+            <div class="history-item" th:each="att : ${attendances}">
                 <div class="history-date">
-                    📅 <span th:text="${#temporals.format(att.date, 'yyyy年MM月dd日 (E)')}"></span>
-                    
-                    <span th:if="${att.overDailyLimit == false and att.insufficientBreak == false}" class="badge badge-normal">正常</span>
-                    <span th:if="${att.overDailyLimit == true}" class="badge badge-violation">8時間超過</span>
-                    <span th:if="${att.insufficientBreak == true}" class="badge badge-violation">休憩不足</span>
+                    📅
+                    <span th:text="${#temporals.format(att.date, 'yyyy年MM月dd日 (E)')}"></span>
+                    <span class="badge badge-normal">正常</span>
                 </div>
 
                 <div class="history-times">
-                    <span>🟢 出勤: <strong th:text="${att.startTime}">--:--</strong></span>
-                    <span>🔴 退勤: <strong th:text="${att.endTime != null ? att.endTime : '勤務中'}">--:--</strong></span>
-                    <span>☕ 休憩: <strong th:text="${att.breakMinutes != null ? att.breakMinutes + '分' : '-'}">-</strong></span>
-                    <span>⏱️ 勤務: <strong th:text="${#numbers.formatDecimal(att.calculateWorkMinutes() / 60.0, 1, 1)} + '時間'">-</strong></span>
+                    <span>
+                        🟢 打刻:
+                        <strong th:text="${#temporals.format(att.clockTime, 'HH:mm:ss')}">--:--</strong>
+                    </span>
+                    <span>
+                        🏷 種別:
+                        <strong th:text="${att.clockType}">-</strong>
+                    </span>
                 </div>
 
                 <div th:if="${att.location}" style="margin-top: 8px; font-size: 13px; color: #999;">
                     📍 <span th:text="${att.location}"></span>
                 </div>
             </div>
+
         </div>
     </div>
+
 </body>
 </html>
