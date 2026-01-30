@@ -174,9 +174,7 @@
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
         }
-		14:40table-container {
-		overflow-x: auto;
-		}
+	
 		table {
 		width: 100%;
 		border-collapse: collapse;
@@ -330,32 +328,42 @@
 			        </div>
 			    </div>
 			</div>
-
-			
 			<script th:inline="javascript">
 			    function exportCSV() {
 			        const period = document.getElementById('exportPeriod').value;
 			        const userId = document.getElementById('exportUserId').value;
 			        
-			        let url = '/admin/attendance-list/export-csv?period=' + period;
-			        if (userId) {
-			            url += '&userId=' + userId;
+			        // URLを構築
+			        let url = '/admin/attendance-list/export-csv?period=' + encodeURIComponent(period);
+			        if (userId && userId.trim() !== '') {
+			            url += '&userId=' + encodeURIComponent(userId);
 			        }
 			        
-			        // ダウンロード開始のフィードバック
+			        console.log('Exporting CSV:', url);
+			        
+			        // ボタンのフィードバック
 			        const btn = event.target;
 			        const originalText = btn.innerHTML;
 			        btn.innerHTML = '⏳ ダウンロード中...';
 			        btn.disabled = true;
 			        
-			        // ダウンロード後にボタンを元に戻す
+			        // 非表示のリンクを作成してクリック
+			        const link = document.createElement('a');
+			        link.href = url;
+			        link.download = 'attendance.csv';
+			        link.style.display = 'none';
+			        document.body.appendChild(link);
+			        link.click();
+			        
+			        // クリーンアップ
 			        setTimeout(() => {
+			            document.body.removeChild(link);
 			            btn.innerHTML = originalText;
 			            btn.disabled = false;
-			        }, 2000);
-			        
-			        window.location.href = url;
+			        }, 1500);
 			    }
+			</script>
+				</script>
 			</script>
 			</script>
 			</body>

@@ -10,6 +10,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 import lombok.AllArgsConstructor;
@@ -37,8 +39,8 @@ public class Signage {
 	@Column(nullable = false, columnDefinition = "TEXT")
 	private String message; // 本文
 
-	@Column(length = 20)
-	private String targetType; // 送信対象者
+	@Column(nullable = false, length = 20)
+	private String targetType; // ALL / DEPARTMENT / USER
 
 	@ManyToOne(fetch = FetchType.LAZY)
 	@JoinColumn(name = "target_department_id")
@@ -48,6 +50,27 @@ public class Signage {
 	@JoinColumn(name = "target_user_id")
 	private User targetUser;
 
+	@Column(nullable = false)
 	private LocalDateTime createdAt; // 作成日
+
+	@Column(nullable = false)
 	private LocalDateTime updatedAt; // 更新日
+
+	@PrePersist
+	public void prePersist() {
+		LocalDateTime now = LocalDateTime.now();
+		if (createdAt == null)
+			createdAt = now;
+		if (updatedAt == null)
+			updatedAt = now;
+		if (targetType == null || targetType.isBlank())
+			targetType = "ALL";
+	}
+
+	@PreUpdate
+	public void preUpdate() {
+		updatedAt = LocalDateTime.now();
+		if (targetType == null || targetType.isBlank())
+			targetType = "ALL";
+	}
 }

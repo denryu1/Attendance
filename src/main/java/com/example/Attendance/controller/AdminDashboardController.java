@@ -1,7 +1,5 @@
 package com.example.Attendance.controller;
 
-import java.io.IOException;
-import java.io.PrintWriter;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -11,10 +9,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -145,135 +147,158 @@ public class AdminDashboardController {
 	}
 
 	// CSVエクスポート機能
+	// CSVエクスポート機能（完全リファクタリング版）
 	@GetMapping("/attendance-list/export-csv")
-	public void exportAttendanceCsv(
+	public ResponseEntity<byte[]> exportAttendanceCsv(
 			@RequestParam(required = false) Long userId,
 			@RequestParam(defaultValue = "all") String period,
-			HttpSession session,
-			HttpServletResponse response) throws IOException {
+			HttpSession session) {
 
 		String role = (String) session.getAttribute("userRole");
 		if (!"ADMIN".equals(role)) {
-			response.sendError(HttpServletResponse.SC_FORBIDDEN);
-			return;
+			return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
 		}
 
-		LocalDate today = LocalDate.now();
-		LocalDate startDate;
-		LocalDate endDate = today;
+		try {
+			LocalDate today = LocalDate.now();
+			LocalDate startDate;
+			LocalDate endDate = today;
 
-		// 期間の設定
-		switch (period) {
-		case "today":
-			startDate = today;
-			break;
-		case "week":
-			startDate = today.minusWeeks(1);
-			break;
-		case "month":
-			startDate = today.minusMonths(1);
-			break;
-		default:
-			startDate = LocalDate.of(2020, 1, 1); // 全期間
-			break;
-		}
-
-		// データ取得
-		List<Attendance> attendances;
-		String fileName;
-
-		if (userId != null) {
-			User selectedUser = userRepository.findById(userId).orElse(null);
-			if (selectedUser != null) {
-				attendances = attendanceRepository.findByUserOrderByClockTimeDesc(selectedUser).stream()
-						.filter(a -> !a.getDate().isBefore(startDate) && !a.getDate().isAfter(endDate))
-						.collect(Collectors.toList());
-				fileName = "attendance_" + selectedUser.getName() + "_" + period + "_"
-						+ today.format(DateTimeFormatter.ofPattern("yyyyMMdd")) + ".csv";
-			} else {
-				attendances = new ArrayList<>();
-				fileName = "attendance_" + period + "_" + today.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-						+ ".csv";
+			// 期間の設定
+			switch (period) {
+			case "today":
+				startDate = today;
+				break;
+			case "week":
+				startDate = today.minusWeeks(1);
+				break;
+			case "month":
+				startDate = today.minusMonths(1);
+				break;
+			default:
+				startDate = LocalDate.of(2020, 1, 1);
+				break;
 			}
-		} else {
-			attendances = attendanceRepository.findAll().stream()
-					.filter(a -> !a.getDate().isBefore(startDate) && !a.getDate().isAfter(endDate))
-					.sorted((a1, a2) -> a2.getClockTime().compareTo(a1.getClockTime()))
-					.collect(Collectors.toList());
-			fileName = "attendance_all_" + period + "_" + today.format(DateTimeFormatter.ofPattern("yyyyMMdd"))
-					+ ".csv";
+
+			// データ取得
+			List<Attendance> attendances;
+			String fileName;
+			String userNameForFile = "all";
+
+			if (userId != null && userId > 0) {
+				User selectedUser = userRepository.findById(userId).orElse(null);
+				if (selectedUser != null) {
+					attendances = attendanceRepository.findByUserOrderByClockTimeDesc(selectedUser).stream()
+							.filter(a -> !a.getDate().isBefore(startDate) && !a.getDate().isAfter(endDate))
+							.sorted((a1, a2) -> a2.getClockTime().compareTo(a1.getClockTime()))
+							.collect(Collectors.toList());
+					userNameForFile = selectedUser.getName();
+				} else {
+					attendances = new ArrayList<>();
+				}
+			} else {
+				attendances = attendanceRepository.findAll().stream()
+						.filter(a -> !a.getDate().isBefore(startDate) && !a.getDate().isAfter(endDate))
+						.sorted((a1, a2) -> a2.getClockTime().compareTo(a1.getClockTime()))
+						.collect(Collectors.toList());
+			}
+
+			// CSVデータ生成
+			String csvContent = generateCSV(attendances);
+
+			// UTF-8 BOM付きバイト配列に変換
+			byte[] bom = new byte[] { (byte) 0xEF, (byte) 0xBB, (byte) 0xBF };
+			byte[] csvBytes = csvContent.getBytes(java.nio.charset.StandardCharsets.UTF_8);
+			byte[] output = new byte[bom.length + csvBytes.length];
+			System.arraycopy(bom, 0, output, 0, bom.length);
+			System.arraycopy(csvBytes, 0, output, bom.length, csvBytes.length);
+
+			// ファイル名生成
+			fileName = String.format("attendance_%s_%s_%s.csv",
+					userNameForFile,
+					period,
+					today.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
+
+			// レスポンスヘッダー設定
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.parseMediaType("text/csv; charset=UTF-8"));
+			headers.setContentDisposition(ContentDisposition.builder("attachment")
+					.filename(fileName, java.nio.charset.StandardCharsets.UTF_8)
+					.build());
+			headers.setCacheControl("no-cache, no-store, must-revalidate");
+			headers.setPragma("no-cache");
+			headers.setExpires(0);
+
+			return new ResponseEntity<>(output, headers, HttpStatus.OK);
+
+		} catch (Exception e) {
+			e.printStackTrace();
+			return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 		}
+	}
 
-		// レスポンス設定
-		response.setContentType("text/csv; charset=UTF-8");
-		response.setHeader("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
-
-		// CSV出力
-		PrintWriter writer = response.getWriter();
-
-		// BOM追加（Excel対応）
-		writer.write('\uFEFF');
+	// CSV生成メソッド
+	private String generateCSV(List<Attendance> attendances) {
+		StringBuilder csv = new StringBuilder();
 
 		// ヘッダー
-		writer.println("日付,社員名,部署,打刻時刻,打刻種別,場所,備考");
+		csv.append("日付,社員名,部署,打刻時刻,打刻種別,場所,備考\n");
 
 		// データ行
-		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd (E)");
+		DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy/MM/dd (E)", java.util.Locale.JAPANESE);
 		DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
 
 		for (Attendance att : attendances) {
-			StringBuilder line = new StringBuilder();
-
 			// 日付
-			line.append(escapeCSV(att.getDate().format(dateFormatter))).append(",");
+			csv.append(escapeCSV(att.getDate().format(dateFormatter))).append(",");
 
 			// 社員名
-			line.append(escapeCSV(att.getUser().getName())).append(",");
+			csv.append(escapeCSV(att.getUser().getName())).append(",");
 
 			// 部署
 			String department = att.getUser().getDepartment() != null
 					? att.getUser().getDepartment().getName()
 					: "未所属";
-			line.append(escapeCSV(department)).append(",");
+			csv.append(escapeCSV(department)).append(",");
 
 			// 打刻時刻
-			line.append(escapeCSV(att.getClockTime().format(timeFormatter))).append(",");
+			csv.append(escapeCSV(att.getClockTime().format(timeFormatter))).append(",");
 
 			// 打刻種別
-			String clockType = "";
-			switch (att.getClockType()) {
-			case "CLOCK_IN":
-				clockType = "出勤";
-				break;
-			case "CLOCK_OUT":
-				clockType = "退勤";
-				break;
-			case "BREAK_START":
-				clockType = "休憩開始";
-				break;
-			case "BREAK_END":
-				clockType = "休憩終了";
-				break;
-			default:
-				clockType = att.getClockType();
-			}
-			line.append(escapeCSV(clockType)).append(",");
+			String clockType = convertClockType(att.getClockType());
+			csv.append(escapeCSV(clockType)).append(",");
 
 			// 場所
-			line.append(escapeCSV(att.getLocation() != null ? att.getLocation() : "")).append(",");
+			csv.append(escapeCSV(att.getLocation() != null ? att.getLocation() : "")).append(",");
 
 			// 備考
-			line.append(escapeCSV(att.getNotes() != null ? att.getNotes() : ""));
+			csv.append(escapeCSV(att.getNotes() != null ? att.getNotes() : ""));
 
-			writer.println(line.toString());
+			csv.append("\n");
 		}
 
-		writer.flush();
+		return csv.toString();
 	}
 
-	// CSVエスケープ処理
+	// 打刻種別変換
+	private String convertClockType(String clockType) {
+		switch (clockType) {
+		case "CLOCK_IN":
+			return "出勤";
+		case "CLOCK_OUT":
+			return "退勤";
+		case "BREAK_START":
+			return "休憩開始";
+		case "BREAK_END":
+			return "休憩終了";
+		default:
+			return clockType;
+		}
+	}
+
+	// CSVエスケープ処理（改善版）
 	private String escapeCSV(String value) {
-		if (value == null) {
+		if (value == null || value.isEmpty()) {
 			return "";
 		}
 
@@ -281,7 +306,7 @@ public class AdminDashboardController {
 		String escaped = value.replace("\"", "\"\"");
 
 		// カンマ、改行、ダブルクォートが含まれている場合はダブルクォートで囲む
-		if (escaped.contains(",") || escaped.contains("\n") || escaped.contains("\"")) {
+		if (escaped.contains(",") || escaped.contains("\n") || escaped.contains("\r") || escaped.contains("\"")) {
 			return "\"" + escaped + "\"";
 		}
 

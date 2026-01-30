@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>サイネージ新規作成</title>
+    <title>サイネージ編集</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -83,17 +83,6 @@
             color: #666;
             margin-top: 5px;
         }
-        .selected-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 10px;
-            background: #e7f3ff;
-            color: #0066cc;
-            padding: 10px 15px;
-            border-radius: 8px;
-            margin-top: 10px;
-            font-weight: bold;
-        }
         .button-group {
             display: flex;
             gap: 15px;
@@ -151,8 +140,8 @@
 </head>
 <body>
     <div class="header">
-        <h1>📝 サイネージ新規作成</h1>
-        <p>お知らせを作成して社員に配信</p>
+        <h1>✏️ サイネージ編集</h1>
+        <p>お知らせ内容を更新</p>
     </div>
 
     <div class="nav">
@@ -165,15 +154,15 @@
 
     <div class="container">
         <div class="form-card">
-            <h2>新規お知らせ作成</h2>
+            <h2>お知らせ編集</h2>
             
-            <form th:action="@{/signages/create}" method="post" id="signageForm" onsubmit="return validateForm()">
+            <form th:action="@{/signages/edit/{id}(id=${signage.id})}" method="post" id="signageForm" onsubmit="return validateForm()">
                 <div class="form-group">
                     <label>
                         📌 タイトル
                         <span class="required">*</span>
                     </label>
-                    <input type="text" name="title" id="title" required placeholder="例：システムメンテナンスのお知らせ">
+                    <input type="text" name="title" id="title" required th:value="${signage.title}">
                 </div>
 
                 <div class="form-group">
@@ -181,7 +170,7 @@
                         📄 本文
                         <span class="required">*</span>
                     </label>
-                    <textarea name="message" id="message" required placeholder="お知らせの詳細内容を入力してください"></textarea>
+                    <textarea name="message" id="message" required th:text="${signage.message}"></textarea>
                 </div>
 
                 <div class="form-group">
@@ -190,11 +179,10 @@
                         <span class="required">*</span>
                     </label>
                     <select name="targetType" id="targetType" required>
-                        <option value="ALL">全社員</option>
-                        <option value="DEPARTMENT">特定部署</option>
-                        <option value="USER">特定ユーザー</option>
+                        <option value="ALL" th:selected="${signage.targetType == 'ALL'}">全社員</option>
+                        <option value="DEPARTMENT" th:selected="${signage.targetType == 'DEPARTMENT'}">特定部署</option>
+                        <option value="USER" th:selected="${signage.targetType == 'USER'}">特定ユーザー</option>
                     </select>
-                    <p class="help-text">お知らせを表示する対象を選択してください</p>
                 </div>
 
                 <!-- 部署選択 -->
@@ -204,10 +192,10 @@
                         <option value="">-- 部署を選択 --</option>
                         <option th:each="dept : ${departments}" 
                                 th:value="${dept.id}" 
-                                th:text="${dept.name}">
+                                th:text="${dept.name}"
+                                th:selected="${signage.targetDepartment != null && signage.targetDepartment.id == dept.id}">
                         </option>
                     </select>
-                    <div id="selectedDepartmentDisplay"></div>
                 </div>
 
                 <!-- ユーザー選択 -->
@@ -217,20 +205,19 @@
                         <option value="">-- ユーザーを選択 --</option>
                         <option th:each="user : ${users}" 
                                 th:value="${user.id}" 
-                                th:text="${user.name + ' (' + user.email + ')'}">
+                                th:text="${user.name + ' (' + user.email + ')'}"
+                                th:selected="${signage.targetUser != null && signage.targetUser.id == user.id}">
                         </option>
                     </select>
-                    <div id="selectedUserDisplay"></div>
                 </div>
 
-                <!-- 選択状態の表示 -->
                 <div class="form-group">
                     <div id="targetInfo" class="info-box" style="display: none;"></div>
                 </div>
 
                 <div class="button-group">
-                    <button type="submit" class="btn btn-primary" id="submitBtn">
-                        ✅ 作成する
+                    <button type="submit" class="btn btn-primary">
+                        ✅ 更新する
                     </button>
                     <a href="/signages/list" class="btn btn-secondary">
                         ← 戻る
@@ -241,122 +228,66 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-          const targetTypeEl = document.getElementById('targetType');
-          const departmentField = document.getElementById('departmentField');
-          const userField = document.getElementById('userField');
-          const departmentSelect = document.getElementById('departmentSelect');
-          const userSelect = document.getElementById('userSelect');
-          const targetInfo = document.getElementById('targetInfo');
-          const deptDisplay = document.getElementById('selectedDepartmentDisplay');
-          const userDisplay = document.getElementById('selectedUserDisplay');
-
-          // 必須要素が無い画面なら何もしない
-          if (!targetTypeEl) return;
-
-          // イベントリスナー設定
-          targetTypeEl.addEventListener('change', updateTargetFields);
-          if (departmentSelect) departmentSelect.addEventListener('change', updateSelectedDisplay);
-          if (userSelect) userSelect.addEventListener('change', updateSelectedDisplay);
-
-          // 初期表示
-          updateTargetFields();
-
-          function updateTargetFields() {
-            const targetType = targetTypeEl.value;
-
-            // フィールドを非表示
-            if (departmentField) departmentField.classList.remove('show');
-            if (userField) userField.classList.remove('show');
-            if (targetInfo) targetInfo.style.display = 'none';
-
-            // required属性を削除
-            if (departmentSelect) departmentSelect.removeAttribute('required');
-            if (userSelect) userSelect.removeAttribute('required');
-
-            // 選択をリセット
-            if (departmentSelect) departmentSelect.value = '';
-            if (userSelect) userSelect.value = '';
-            if (deptDisplay) deptDisplay.innerHTML = '';
-            if (userDisplay) userDisplay.innerHTML = '';
-
-            // 選択に応じて表示
-            if (targetType === 'DEPARTMENT') {
-              if (departmentField) departmentField.classList.add('show');
-              if (departmentSelect) departmentSelect.setAttribute('required', 'required');
-              if (targetInfo) {
-                targetInfo.style.display = 'block';
-                targetInfo.textContent = '📢 選択した部署に所属する全社員にお知らせが表示されます';
-              }
-            } else if (targetType === 'USER') {
-              if (userField) userField.classList.add('show');
-              if (userSelect) userSelect.setAttribute('required', 'required');
-              if (targetInfo) {
-                targetInfo.style.display = 'block';
-                targetInfo.textContent = '📢 選択したユーザーのみにお知らせが表示されます';
-              }
-            } else {
-              if (targetInfo) {
-                targetInfo.style.display = 'block';
-                targetInfo.textContent = '📢 全社員にお知らせが表示されます';
-              }
-            }
-          }
-
-          function updateSelectedDisplay() {
-            const targetType = targetTypeEl.value;
-
-            if (targetType === 'DEPARTMENT' && departmentSelect && departmentSelect.value && deptDisplay) {
-              const name = departmentSelect.options[departmentSelect.selectedIndex].text;
-              deptDisplay.innerHTML = `<div class="selected-item">🏢 ${escapeHtml(name)}</div>`;
-            } else if (deptDisplay) {
-              deptDisplay.innerHTML = '';
-            }
-
-            if (targetType === 'USER' && userSelect && userSelect.value && userDisplay) {
-              const name = userSelect.options[userSelect.selectedIndex].text;
-              userDisplay.innerHTML = `<div class="selected-item">👤 ${escapeHtml(name)}</div>`;
-            } else if (userDisplay) {
-              userDisplay.innerHTML = '';
-            }
-          }
-
-          function escapeHtml(str) {
-            return String(str)
-              .replaceAll('&', '&amp;')
-              .replaceAll('<', '&lt;')
-              .replaceAll('>', '&gt;')
-              .replaceAll('"', '&quot;')
-              .replaceAll("'", '&#039;');
-          }
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('targetType').addEventListener('change', updateTargetFields);
+            document.getElementById('departmentSelect').addEventListener('change', updateInfo);
+            document.getElementById('userSelect').addEventListener('change', updateInfo);
+            
+            updateTargetFields();
         });
 
-        // バリデーション関数
+        function updateTargetFields() {
+            const targetType = document.getElementById('targetType').value;
+            const departmentField = document.getElementById('departmentField');
+            const userField = document.getElementById('userField');
+            const departmentSelect = document.getElementById('departmentSelect');
+            const userSelect = document.getElementById('userSelect');
+            const targetInfo = document.getElementById('targetInfo');
+            
+            departmentField.classList.remove('show');
+            userField.classList.remove('show');
+            targetInfo.style.display = 'none';
+            
+            departmentSelect.removeAttribute('required');
+            userSelect.removeAttribute('required');
+            
+            if (targetType === 'DEPARTMENT') {
+                departmentField.classList.add('show');
+                departmentSelect.setAttribute('required', 'required');
+                targetInfo.style.display = 'block';
+                targetInfo.textContent = '📢 選択した部署に所属する全社員にお知らせが表示されます';
+            } else if (targetType === 'USER') {
+                userField.classList.add('show');
+                userSelect.setAttribute('required', 'required');
+                targetInfo.style.display = 'block';
+                targetInfo.textContent = '📢 選択したユーザーのみにお知らせが表示されます';
+            } else if (targetType === 'ALL') {
+                targetInfo.style.display = 'block';
+                targetInfo.textContent = '📢 全社員にお知らせが表示されます';
+            }
+        }
+
+        function updateInfo() {
+            // 選択状態の表示更新用（必要に応じて実装）
+        }
+
         function validateForm() {
-          const targetTypeEl = document.getElementById('targetType');
-          const departmentSelect = document.getElementById('departmentSelect');
-          const userSelect = document.getElementById('userSelect');
-          const titleEl = document.getElementById('title');
-          const messageEl = document.getElementById('message');
-
-          const title = (titleEl?.value ?? '').trim();
-          const message = (messageEl?.value ?? '').trim();
-
-          if (!title) { alert('タイトルを入力してください'); return false; }
-          if (!message) { alert('本文を入力してください'); return false; }
-
-          const targetType = targetTypeEl?.value ?? 'ALL';
-
-          if (targetType === 'DEPARTMENT' && (!departmentSelect || !departmentSelect.value)) {
-            alert('部署を選択してください'); return false;
-          }
-          if (targetType === 'USER' && (!userSelect || !userSelect.value)) {
-            alert('ユーザーを選択してください'); return false;
-          }
-          return true;
+            const targetType = document.getElementById('targetType').value;
+            const departmentSelect = document.getElementById('departmentSelect');
+            const userSelect = document.getElementById('userSelect');
+            
+            if (targetType === 'DEPARTMENT' && !departmentSelect.value) {
+                alert('部署を選択してください');
+                return false;
+            }
+            
+            if (targetType === 'USER' && !userSelect.value) {
+                alert('ユーザーを選択してください');
+                return false;
+            }
+            
+            return true;
         }
     </script>
 </body>
 </html>
-
-

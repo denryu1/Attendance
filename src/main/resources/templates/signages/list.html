@@ -408,12 +408,16 @@
                                 <span th:if="${s.targetType == 'DEPARTMENT'}" class="badge badge-department">特定部署</span>
                                 <span th:if="${s.targetType == 'USER'}" class="badge badge-user">特定ユーザー</span>
                             </td>
-                            <td th:text="${s.targetDepartment != null ? s.targetDepartment.name : (s.targetUser != null ? s.targetUser.name : '-')}">-</td>
-                            <td class="date-time" th:text="${#temporals.format(s.createdAt, 'yyyy/MM/dd HH:mm')}">2024/01/01 12:00</td>
-                            <td style="text-align: center;">
-                                <form th:action="@{/signages/delete/{id}(id=${s.id})}" method="post" style="display: inline;" 
-                                      onsubmit="return confirm('このお知らせを削除しますか?');">
-                                    <button type="submit" class="btn-delete">🗑️ 削除</button>
+							<td style="text-align: center;">
+							    <a th:href="@{/signages/edit/{id}(id=${s.id})}" 
+							       style="background: #667eea; color: white; padding: 6px 12px; border-radius: 6px;続ける15:01font-size: 12px; font-weight: bold; text-decoration: none; margin-right: 5px;">
+							✏️ 編集
+							</a>
+							<form th:action="@{/signages/delete/{id}(id=${s.id})}" method="post" style="display: inline;" 
+							       onsubmit="return confirm('このお知らせを削除しますか?');">
+							<button type="submit" class="btn-delete">🗑️ 削除</button>
+							</form>
+							</td>
                                 </form>
                             </td>
                         </tr>

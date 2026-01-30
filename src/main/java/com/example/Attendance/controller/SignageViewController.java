@@ -2,6 +2,7 @@ package com.example.Attendance.controller;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import jakarta.servlet.http.HttpSession;
 
@@ -34,18 +35,59 @@ public class SignageViewController {
 	@Autowired
 	private UserRepository userRepository;
 
-	// サイネージ表示(社員向け)
+	// サイネージ表示(社員向け) - ログインユーザーに応じた表示
 	@GetMapping("/display")
-	public String display(Model model) {
-		List<Signage> activeSignages = signageRepository.findAll().stream()
-				.filter(s -> "ALL".equals(s.getTargetType()))
-				.toList();
+	public String display(HttpSession session, Model model) {
+		Long userId = (Long) session.getAttribute("userId");
 
-		model.addAttribute("signages", activeSignages);
+		if (userId == null) {
+			return "redirect:/login";
+		}
+
+		User currentUser = userRepository.findById(userId).orElse(null);
+		if (currentUser == null) {
+			return "redirect:/login";
+		}
+
+		// 表示するサイネージを取得
+		List<Signage> signages = getSignagesForUser(currentUser);
+
+		model.addAttribute("signages", signages);
+		model.addAttribute("currentUser", currentUser);
+
 		return "signages/display";
 	}
 
-	// サイネージ一覧(管理者向け) - 絞り込み機能追加
+	// ユーザーに応じたサイネージ取得
+	private List<Signage> getSignagesForUser(User user) {
+		List<Signage> allSignages = signageRepository.findAll();
+
+		return allSignages.stream()
+				.filter(signage -> {
+					// 全体配信
+					if ("ALL".equals(signage.getTargetType())) {
+						return true;
+					}
+					// 部署配信
+					if ("DEPARTMENT".equals(signage.getTargetType()) &&
+							signage.getTargetDepartment() != null &&
+							user.getDepartment() != null &&
+							signage.getTargetDepartment().getId().equals(user.getDepartment().getId())) {
+						return true;
+					}
+					// 個人配信
+					if ("USER".equals(signage.getTargetType()) &&
+							signage.getTargetUser() != null &&
+							signage.getTargetUser().getId().equals(user.getId())) {
+						return true;
+					}
+					return false;
+				})
+				.sorted((s1, s2) -> s2.getCreatedAt().compareTo(s1.getCreatedAt()))
+				.collect(Collectors.toList());
+	}
+
+	// サイネージ一覧(管理者向け) - 絞り込み機能付き
 	@GetMapping("/list")
 	public String list(
 			@RequestParam(required = false) String targetType,
@@ -99,9 +141,13 @@ public class SignageViewController {
 				break;
 			}
 		} else {
-			// 絞り込みなし - 全て表示
 			signages = signageRepository.findAll();
 		}
+
+		// 作成日時でソート
+		signages = signages.stream()
+				.sorted((s1, s2) -> s2.getCreatedAt().compareTo(s1.getCreatedAt()))
+				.collect(Collectors.toList());
 
 		// 統計データを計算
 		List<Signage> allSignages = signageRepository.findAll();
@@ -146,7 +192,6 @@ public class SignageViewController {
 
 		model.addAttribute("signage", new Signage());
 
-		// 部署一覧とユーザー一覧を渡す
 		List<Department> departments = departmentRepository.findAll();
 		List<User> users = userRepository.findAll();
 
@@ -156,7 +201,7 @@ public class SignageViewController {
 		return "signages/create";
 	}
 
-	// サイネージ作成処理（統一版 - Long型のみ使用）
+	// サイネージ作成処理
 	@PostMapping("/create")
 	public String create(
 			HttpSession session,
@@ -177,12 +222,9 @@ public class SignageViewController {
 		// 部署またはユーザーを取得
 		if ("DEPARTMENT".equals(targetType) && targetDepartmentId != null) {
 			targetDepartment = departmentRepository.findById(targetDepartmentId).orElse(null);
-			System.out.println(
-					"Selected Department: " + (targetDepartment != null ? targetDepartment.getName() : "null"));
 		}
 		if ("USER".equals(targetType) && targetUserId != null) {
 			targetUser = userRepository.findById(targetUserId).orElse(null);
-			System.out.println("Selected User: " + (targetUser != null ? targetUser.getName() : "null"));
 		}
 
 		Signage signage = Signage.builder()
@@ -197,8 +239,71 @@ public class SignageViewController {
 
 		signageRepository.save(signage);
 
-		System.out.println(
-				"Signage created - Type: " + targetType + ", Dept: " + targetDepartment + ", User: " + targetUser);
+		return "redirect:/signages/list";
+	}
+
+	// サイネージ編集画面
+	@GetMapping("/edit/{id}")
+	public String editForm(@PathVariable Long id, HttpSession session, Model model) {
+		String role = (String) session.getAttribute("userRole");
+		if (!"ADMIN".equals(role)) {
+			return "redirect:/login";
+		}
+
+		Signage signage = signageRepository.findById(id).orElse(null);
+		if (signage == null) {
+			return "redirect:/signages/list";
+		}
+
+		List<Department> departments = departmentRepository.findAll();
+		List<User> users = userRepository.findAll();
+
+		model.addAttribute("signage", signage);
+		model.addAttribute("departments", departments);
+		model.addAttribute("users", users);
+
+		return "signages/edit";
+	}
+
+	// サイネージ更新処理
+	@PostMapping("/edit/{id}")
+	public String update(
+			@PathVariable Long id,
+			HttpSession session,
+			@RequestParam String title,
+			@RequestParam String message,
+			@RequestParam(defaultValue = "ALL") String targetType,
+			@RequestParam(required = false) Long targetDepartmentId,
+			@RequestParam(required = false) Long targetUserId) {
+
+		String role = (String) session.getAttribute("userRole");
+		if (!"ADMIN".equals(role)) {
+			return "redirect:/login";
+		}
+
+		Signage signage = signageRepository.findById(id).orElse(null);
+		if (signage == null) {
+			return "redirect:/signages/list";
+		}
+
+		Department targetDepartment = null;
+		User targetUser = null;
+
+		if ("DEPARTMENT".equals(targetType) && targetDepartmentId != null) {
+			targetDepartment = departmentRepository.findById(targetDepartmentId).orElse(null);
+		}
+		if ("USER".equals(targetType) && targetUserId != null) {
+			targetUser = userRepository.findById(targetUserId).orElse(null);
+		}
+
+		signage.setTitle(title);
+		signage.setMessage(message);
+		signage.setTargetType(targetType);
+		signage.setTargetDepartment(targetDepartment);
+		signage.setTargetUser(targetUser);
+		signage.setUpdatedAt(LocalDateTime.now());
+
+		signageRepository.save(signage);
 
 		return "redirect:/signages/list";
 	}
